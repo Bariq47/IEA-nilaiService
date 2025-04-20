@@ -37,7 +37,7 @@ class nilaiController extends Controller
         $validator = Validator::make($request->all(), [
             'nim' => 'required',
             'kode_mk' => 'required',
-            'nilai' => 'required'
+            'nilai' => 'required|integer|min:0|max:100'
         ]);
         if ($validator->fails()) {
             return new nilaiResource(null, 'failed', $validator->errors());
@@ -68,14 +68,41 @@ class nilaiController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'nim' => 'required',
+            'kode_mk' => 'required',
+            'nilai' => 'required|integer|min:0|max:100'
+        ]);
+        if ($validator->fails()) {
+            return new nilaiResource(null, 'failed', $validator->errors());
+        };
+
+        $nilai = nilaiService::find($id);
+        if (!$nilai) {
+            return new nilaiResource(null, 'failed', 'nilai tidak ditemukan');
+        }
+
+        $response = Http::get("http://localhost:8000/api/mahasiswa/nim/" . $request->nim);
+        if ($response->status() !== 200 || $response->json('data') === null) {
+            return new nilaiResource(null, 'failed', 'Mahasiswa dengan NIM tersebut tidak ditemukan');
+        }
+        $nilai->update($request->all());
+
+        return new nilaiResource($nilai, 'success', 'nilai terupdate');
     }
+
+
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
     {
-        //
+        $nilai = nilaiService::find($id);
+        if (!$nilai) {
+            return new nilaiResource(null, 'Failed', 'Nilai tidak ditemukan');
+        }
+        $nilai->delete();
+        return new nilaiResource(null, 'success', 'Nilai berhasil dihapus');
     }
 }
